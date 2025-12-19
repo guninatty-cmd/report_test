@@ -20,29 +20,40 @@ def get_market_data():
     data_list = []
     
     for name, ticker in tickers.items():
-        stock = yf.Ticker(ticker)
-        hist = stock.history(period="2d")
-        if len(hist) < 2: continue
-        
-        close = hist['Close'].iloc[-1]
-        prev_close = hist['Close'].iloc[-2]
-        change = ((close - prev_close) / prev_close) * 100
-        
-        data_list.append(f"{name}: {close:,.2f} ({change:+.2f}%)")
+        try:
+            stock = yf.Ticker(ticker)
+            hist = stock.history(period="2d")
+            if len(hist) < 2: continue
+            
+            close = hist['Close'].iloc[-1]
+            prev_close = hist['Close'].iloc[-2]
+            change = ((close - prev_close) / prev_close) * 100
+            
+            # 상승/하락에 따라 이모지 및 색상(HTML) 적용
+            color = "red" if change > 0 else "blue"
+            emoji = "🔺" if change > 0 else "Vk"
+            data_list.append(f"<span style='color:{color}'>{emoji} {name}: {close:,.2f} ({change:+.2f}%)</span>")
+        except Exception as e:
+            print(f"Error fetching {name}: {e}")
+            continue
     
-    return "\n".join(data_list)
+    return "<br>".join(data_list)
 
 def get_news_summary():
     symbols = ['SPY', 'QQQ', 'NVDA', 'TSLA', 'AAPL', 'MSFT']
     news_content = ""
     
     for symbol in symbols:
-        stock = yf.Ticker(symbol)
-        news = stock.news
-        if news:
-            for item in news[:1]:
-                title = item.get('title', '')
-                news_content += f"- [{symbol}] {title}\n"
+        try:
+            stock = yf.Ticker(symbol)
+            news = stock.news
+            if news:
+                for item in news[:1]:
+                    title = item.get('title', '')
+                    link = item.get('link', '')
+                    news_content += f"- [{symbol}] <a href='{link}'>{title}</a><br>"
+        except Exception:
+            continue
     
     return news_content
 
@@ -69,8 +80,8 @@ def generate_html_report(market_data, news_data):
     {news_data}
     """
     
-    # Gemini API 직접 호출
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={GEMINI_API_KEY}"
+    # ✅ 여기가 핵심 수정 사항입니다! (gemini-pro -> gemini-1.5-flash)
+    url = f"[https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=](https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=){GEMINI_API_KEY}"
     
     headers = {
         'Content-Type': 'application/json'
@@ -88,17 +99,12 @@ def generate_html_report(market_data, news_data):
         response = requests.post(url, headers=headers, json=data)
         result = response.json()
         
-        # 디버깅: 응답 출력
-        print("API Response:", result)
-        
-        # 결과 텍스트 추출 (에러 처리 추가)
+        # 결과 텍스트 추출
         if 'candidates' in result and len(result['candidates']) > 0:
             content = result['candidates'][0]['content']['parts'][0]['text']
         elif 'error' in result:
-            print(f"API Error: {result['error']}")
             raise Exception(f"Gemini API Error: {result['error']['message']}")
         else:
-            print(f"Unexpected response format: {result}")
             raise Exception("Unexpected API response format")
         
         content = content.replace("```html", "").replace("```", "")
@@ -106,8 +112,9 @@ def generate_html_report(market_data, news_data):
         
     except Exception as e:
         print(f"Error generating report: {e}")
-        raise
-        
+        # 에러 발생 시 비상용 간단 리포트 반환
+        return f"<html><body><h2>{today_date} 리포트 작성 실패</h2><p>AI 연결 중 오류가 발생했습니다: {e}</p></body></html>"
+
 def send_email(html_content):
     try:
         msg = MIMEMultipart()
@@ -128,10 +135,12 @@ def send_email(html_content):
 
 if __name__ == "__main__":
     print("데이터 수집 및 리포트 작성 중...")
-    market_data = get_market_data()
-    news_data = get_news_summary()
-    
-    html_report = generate_html_report(market_data, news_data)
-    
-    print("이메일 전송 중...")
-    send_email(html_report)
+    try:
+        market_data = get_market_data()
+        news_data = get_news_summary()
+        html_report = generate_html_report(market_data, news_data)
+        
+        print("이메일 전송 중...")
+        send_email(html_report)
+    except Exception as main_e:
+        print(f"치명적 오류 발생: {main_e}")

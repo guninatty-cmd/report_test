@@ -71,10 +71,10 @@ def generate_html_report(market_data, news_data):
     {news_data}
     """
     
-response = client.models.generate_content(
-    model='gemini-1.5-flash',
-    contents=prompt
-)
+    response = client.models.generate_content(
+        model='gemini-1.5-flash',
+        contents=prompt
+    )
     
     # 결과 텍스트 정리
     content = response.text

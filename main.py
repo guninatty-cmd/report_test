@@ -17,7 +17,8 @@ TO_EMAIL = EMAIL_USER
 # Gemini 설정
 genai.configure(api_key=GEMINI_API_KEY)
 # 안정적인 Gemini Pro 모델 사용
-model = genai.GenerativeModel('gemini-1.5-flash')
+# 안정적인 모델 사용
+model = genai.GenerativeModel('gemini-pro')
 
 def get_market_data():
     tickers = {'S&P 500': '^GSPC', 'Dow Jones': '^DJI', 'Nasdaq': '^IXIC', 'Russell 2000': '^RUT'}

@@ -4,7 +4,8 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
 import yfinance as yf
-import google.generativeai as genai
+import requests
+import json
 
 # 1. 환경변수 가져오기
 EMAIL_USER = os.environ.get('EMAIL_USER')
@@ -13,10 +14,6 @@ GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
 
 # 받는 사람도 나, 보내는 사람도 나
 TO_EMAIL = EMAIL_USER 
-
-# Gemini 설정
-genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-pro')
 
 def get_market_data():
     tickers = {'S&P 500': '^GSPC', 'Dow Jones': '^DJI', 'Nasdaq': '^IXIC', 'Russell 2000': '^RUT'}
@@ -72,11 +69,26 @@ def generate_html_report(market_data, news_data):
     {news_data}
     """
     
-    # Gemini에게 생성을 요청
-    response = model.generate_content(prompt)
+    # Gemini API 직접 호출
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={GEMINI_API_KEY}"
     
-    # 결과 텍스트 정리
-    content = response.text
+    headers = {
+        'Content-Type': 'application/json'
+    }
+    
+    data = {
+        "contents": [{
+            "parts": [{
+                "text": prompt
+            }]
+        }]
+    }
+    
+    response = requests.post(url, headers=headers, json=data)
+    result = response.json()
+    
+    # 결과 텍스트 추출
+    content = result['candidates'][0]['content']['parts'][0]['text']
     content = content.replace("```html", "").replace("```", "")
     return content
 

@@ -84,14 +84,30 @@ def generate_html_report(market_data, news_data):
         }]
     }
     
-    response = requests.post(url, headers=headers, json=data)
-    result = response.json()
-    
-    # 결과 텍스트 추출
-    content = result['candidates'][0]['content']['parts'][0]['text']
-    content = content.replace("```html", "").replace("```", "")
-    return content
-
+    try:
+        response = requests.post(url, headers=headers, json=data)
+        result = response.json()
+        
+        # 디버깅: 응답 출력
+        print("API Response:", result)
+        
+        # 결과 텍스트 추출 (에러 처리 추가)
+        if 'candidates' in result and len(result['candidates']) > 0:
+            content = result['candidates'][0]['content']['parts'][0]['text']
+        elif 'error' in result:
+            print(f"API Error: {result['error']}")
+            raise Exception(f"Gemini API Error: {result['error']['message']}")
+        else:
+            print(f"Unexpected response format: {result}")
+            raise Exception("Unexpected API response format")
+        
+        content = content.replace("```html", "").replace("```", "")
+        return content
+        
+    except Exception as e:
+        print(f"Error generating report: {e}")
+        raise
+        
 def send_email(html_content):
     try:
         msg = MIMEMultipart()

@@ -4,7 +4,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
 import yfinance as yf
-import google.generativeai as genai
+import google.genai as genai
 
 # 1. 환경변수 가져오기
 EMAIL_USER = os.environ.get('EMAIL_USER')
@@ -15,10 +15,7 @@ GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
 TO_EMAIL = EMAIL_USER 
 
 # Gemini 설정
-genai.configure(api_key=GEMINI_API_KEY)
-# 안정적인 Gemini Pro 모델 사용
-# 안정적인 모델 사용
-model = genai.GenerativeModel('gemini-pro')
+client = genai.Client(api_key=GEMINI_API_KEY)
 
 def get_market_data():
     tickers = {'S&P 500': '^GSPC', 'Dow Jones': '^DJI', 'Nasdaq': '^IXIC', 'Russell 2000': '^RUT'}
@@ -73,9 +70,12 @@ def generate_html_report(market_data, news_data):
     [뉴스 헤드라인]
     {news_data}
     """
-
-    # Gemini에게 생성을 요청
-    response = model.generate_content(prompt)
+    
+    # 새로운 google.genai API 사용
+    response = client.models.generate_content(
+        model='gemini-2.0-flash-exp',
+        contents=prompt
+    )
     
     # 결과 텍스트 정리
     content = response.text
@@ -88,9 +88,9 @@ def send_email(html_content):
         msg['From'] = EMAIL_USER
         msg['To'] = TO_EMAIL
         msg['Subject'] = f"🇺🇸 [제미나이 모닝 리포트] {datetime.now().strftime('%m월 %d일')} 미국 증시 시황"
-
+        
         msg.attach(MIMEText(html_content, 'html'))
-
+        
         with smtplib.SMTP('smtp.gmail.com', 587) as server:
             server.starttls()
             server.login(EMAIL_USER, EMAIL_PASSWORD)

@@ -2,9 +2,9 @@ name: Daily Stock Report
 
 on:
   schedule:
-    # 한국 시간 매일 아침 9시 (UTC 00:00) 실행
-    - cron: '46 3 * * *'
-  workflow_dispatch: # 수동 실행 버튼 활성화
+    # 12시 41분 발송 (UTC 03:41)
+    - cron: '50 3 * * *'
+  workflow_dispatch: # 수동 실행 버튼
 
 jobs:
   build:
@@ -21,7 +21,7 @@ jobs:
 
       - name: 라이브러리 설치하기
         run: |
-          pip install -r requirements.txt
+          pip install yfinance google-generativeai requests
 
       - name: 리포트 생성 및 발송하기
         env:

@@ -80,8 +80,8 @@ def generate_html_report(market_data, news_data):
     {news_data}
     """
     
-    # ✅ URL 수정 완료 (대괄호/소괄호 제거됨)
-    url = f"[https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=](https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=){GEMINI_API_KEY}"
+    # ✅ 깨끗한 URL로 교체 (대괄호, 소괄호 절대 금지!)
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
     
     headers = {
         'Content-Type': 'application/json'

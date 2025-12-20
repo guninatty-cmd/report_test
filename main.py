@@ -14,9 +14,9 @@ GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
 # 받는 사람도 나, 보내는 사람도 나
 TO_EMAIL = EMAIL_USER 
 
-# ✅ 공식 라이브러리 설정 (이제 파이썬 3.11이라 안전합니다!)
+# ✅ 모델 설정: 가장 안정적인 'gemini-pro' 사용
 genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel('gemini-pro')
 
 def get_market_data():
     tickers = {'S&P 500': '^GSPC', 'Dow Jones': '^DJI', 'Nasdaq': '^IXIC', 'Russell 2000': '^RUT'}
@@ -83,11 +83,8 @@ def generate_html_report(market_data, news_data):
     """
     
     try:
-        # ✅ 라이브러리를 사용하면 주소 오류가 절대 발생하지 않습니다.
         response = model.generate_content(prompt)
         content = response.text
-        
-        # 마크다운 태그 제거
         content = content.replace("```html", "").replace("```", "")
         return content
         

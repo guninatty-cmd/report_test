@@ -2,8 +2,8 @@ name: Daily Stock Report
 
 on:
   schedule:
-    - cron: '14 4 * * *'
-  workflow_dispatch: # 수동 실행 버튼
+    - cron: '21 4 * * *'
+  workflow_dispatch:
 
 jobs:
   build:

@@ -4,8 +4,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
 import yfinance as yf
-import requests
-import json
+import google.generativeai as genai
 
 # 1. 환경변수 가져오기
 EMAIL_USER = os.environ.get('EMAIL_USER')
@@ -14,6 +13,10 @@ GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
 
 # 받는 사람도 나, 보내는 사람도 나
 TO_EMAIL = EMAIL_USER 
+
+# ✅ 공식 라이브러리 설정 (이제 파이썬 3.11이라 안전합니다!)
+genai.configure(api_key=GEMINI_API_KEY)
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 def get_market_data():
     tickers = {'S&P 500': '^GSPC', 'Dow Jones': '^DJI', 'Nasdaq': '^IXIC', 'Russell 2000': '^RUT'}
@@ -29,7 +32,6 @@ def get_market_data():
             prev_close = hist['Close'].iloc[-2]
             change = ((close - prev_close) / prev_close) * 100
             
-            # 상승/하락에 따라 이모지 및 색상(HTML) 적용
             color = "red" if change > 0 else "blue"
             emoji = "🔺" if change > 0 else "Vk"
             data_list.append(f"<span style='color:{color}'>{emoji} {name}: {close:,.2f} ({change:+.2f}%)</span>")
@@ -80,41 +82,18 @@ def generate_html_report(market_data, news_data):
     {news_data}
     """
     
-    # ✅ 깨끗한 URL로 교체 (대괄호, 소괄호 절대 금지!)
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
-    
-    headers = {
-        'Content-Type': 'application/json'
-    }
-    
-    data = {
-        "contents": [{
-            "parts": [{
-                "text": prompt
-            }]
-        }]
-    }
-    
     try:
-        response = requests.post(url, headers=headers, json=data)
-        result = response.json()
+        # ✅ 라이브러리를 사용하면 주소 오류가 절대 발생하지 않습니다.
+        response = model.generate_content(prompt)
+        content = response.text
         
-        # 결과 텍스트 추출
-        if 'candidates' in result and len(result['candidates']) > 0:
-            content = result['candidates'][0]['content']['parts'][0]['text']
-        elif 'error' in result:
-            raise Exception(f"Gemini API Error: {result['error']['message']}")
-        else:
-            # 예외 처리: 예상치 못한 응답
-            print(f"Unexpected response: {result}")
-            raise Exception("API 응답 형식이 예상과 다릅니다.")
-        
+        # 마크다운 태그 제거
         content = content.replace("```html", "").replace("```", "")
         return content
         
     except Exception as e:
         print(f"Error generating report: {e}")
-        return f"<html><body><h2>{today_date} 리포트 작성 실패</h2><p>AI 연결 중 오류가 발생했습니다: {e}</p></body></html>"
+        return f"<html><body><h2>AI 리포트 작성 실패</h2><p>오류 내용: {e}</p></body></html>"
 
 def send_email(html_content):
     try:

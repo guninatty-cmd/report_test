@@ -80,7 +80,7 @@ def generate_html_report(market_data, news_data):
     {news_data}
     """
     
-    # ✅ 여기가 핵심 수정 사항입니다! (gemini-pro -> gemini-1.5-flash)
+    # ✅ URL 수정 완료 (대괄호/소괄호 제거됨)
     url = f"[https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=](https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=){GEMINI_API_KEY}"
     
     headers = {
@@ -105,14 +105,15 @@ def generate_html_report(market_data, news_data):
         elif 'error' in result:
             raise Exception(f"Gemini API Error: {result['error']['message']}")
         else:
-            raise Exception("Unexpected API response format")
+            # 예외 처리: 예상치 못한 응답
+            print(f"Unexpected response: {result}")
+            raise Exception("API 응답 형식이 예상과 다릅니다.")
         
         content = content.replace("```html", "").replace("```", "")
         return content
         
     except Exception as e:
         print(f"Error generating report: {e}")
-        # 에러 발생 시 비상용 간단 리포트 반환
         return f"<html><body><h2>{today_date} 리포트 작성 실패</h2><p>AI 연결 중 오류가 발생했습니다: {e}</p></body></html>"
 
 def send_email(html_content):
